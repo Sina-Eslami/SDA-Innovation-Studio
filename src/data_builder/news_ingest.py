@@ -9,8 +9,9 @@ load_dotenv()
 class NewsClient:
     BASE_URL = "https://newsapi.org/v2/everything"
 
-    def __init__(self, api_key: str | None = None, default_keywords: list[str] | None = None):
+    def __init__(self, api_key: str | None = None, default_keywords: list[str] | None = None, save=False):
         self.api_key = api_key or os.environ.get("NEWS_API_KEY")
+        self.save = save
         if not self.api_key:
             raise ValueError("NEWS_API_KEY not set in environment or passed to NewsClient.")
         self.default_keywords = default_keywords or [
@@ -73,11 +74,13 @@ class NewsClient:
             })
 
         df = pd.DataFrame(rows)
-
-        output_dir = Path("../../data/raw")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        filename = f"raw-patents-{'-'.join(self.default_keywords)}.csv"
-        df.to_csv(output_dir / filename, index=False)
+        if self.save:
+            BASE_DIR = Path(__file__).resolve().parent
+            output_dir = BASE_DIR / ".." / ".." / "data" / "raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            filename = f"raw-patents-{'-'.join(self.default_keywords)}.csv"
+            df.to_csv(output_dir / filename, index=False)
+            print(f"File {output_dir / filename} saved.")
         
         return df
 

@@ -32,9 +32,11 @@ class PatentBiblioClient:
         customer_key: str | None = None,
         customer_secret: str | None = None,
         default_keywords: List[str] | None = None,
+        save=False,
     ):
         self.customer_key = customer_key or os.environ.get("PATENT_CUSTOMER_KEY")
         self.customer_secret = customer_secret or os.environ.get("PATENT_CUSTOMER_SECRET_KEY")
+        self.save = save
 
         if not self.customer_key or not self.customer_secret:
             raise ValueError(
@@ -206,8 +208,6 @@ class PatentBiblioClient:
             "publication_date": pub_date_text,
         }
 
-###----------Helper function------------------------------
-
     def fetch_biblio_last_n_years(self, years_back: int, keywords: List[str] | None = None) -> pd.DataFrame:
         """
         Fetch patents from OPS for SDA keywords in the last `years_back` years
@@ -253,10 +253,12 @@ class PatentBiblioClient:
         df_refs["abstract"] = abstracts
         df_refs["publication_date"] = pub_dates
 
-        output_dir = Path("../../data/raw")
-        output_dir.mkdir(parents=True, exist_ok=True)
+        if self.save:
+            BASE_DIR = Path(__file__).resolve().parent
+            output_dir = BASE_DIR / ".." / ".." / "data" / "raw"
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-        filename = f"raw-patents-{'-'.join(self.default_keywords)}.csv"
-        df_refs.to_csv(output_dir / filename, index=False)
-        
+            filename = f"raw-patents-{'-'.join(self.default_keywords)}.csv"
+            df_refs.to_csv(output_dir / filename, index=False)
+
         return df_refs
