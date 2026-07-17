@@ -1,4 +1,4 @@
-from news_ingest import NewsClient
+from src.data_builder.news_ingest import NewsClient
 
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from pathlib import Path
@@ -299,7 +299,8 @@ def engineer_news_text_features(df: pd.DataFrame) -> pd.DataFrame:
         [df["has_content"] & df["has_description"],
          df["has_description"] & ~df["has_content"],
          ~df["has_description"] & ~df["has_content"]],
-        ["full", "partial", "title_only"]
+        ["full", "partial", "title_only"],
+        default="unknown"
     )
 
     df["pub_year"] = df["published_at"].dt.year

@@ -7,7 +7,7 @@ import re
 BASE_DIR = Path(__file__).resolve().parent
 file_dir = BASE_DIR / ".." / ".." / "data" / "static"
 
-file_path = file_dir / "raw-reviews.csv"
+file_path = file_dir / "raw - reviews.csv"
 
 reviews_df = pd.read_csv(file_path)
 

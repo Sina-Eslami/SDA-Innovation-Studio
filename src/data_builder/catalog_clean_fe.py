@@ -8,7 +8,7 @@ import re
 BASE_DIR = Path(__file__).resolve().parent
 file_dir = BASE_DIR / ".." / ".." / "data" / "static"
 
-catalog_df = pd.read_csv(file_dir / 'appliance-skus-10k-synthetic catalogs.csv')
+catalog_df = pd.read_csv(file_dir / 'raw - catalogs.csv')
 
 
 def clean_catalog_df(df: pd.DataFrame) -> pd.DataFrame:
