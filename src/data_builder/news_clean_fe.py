@@ -148,14 +148,17 @@ for category, keywords in keyword_sets.items():
         try:
             client = NewsClient(default_keywords=[keyword])
 
+            # On a real version year_back should be 5
             df = client.fetch_last_n_years(years_back=0.08)
 
             df["category"] = category
             df["keyword"] = keyword
 
             news_frames.append(df)
-        except Exception:
-            print('you hit your NEWS api limit.')
+        except Exception as e:
+            print('You hit your NEWS api limit.')
+            print(e)
+            df = pd.DataFrame()
 
 if news_frames != []:
     news_df = pd.concat(
@@ -244,3 +247,56 @@ def clean_news_df(df: pd.DataFrame) -> pd.DataFrame:
 
 #-------feature engineering------------------------------------------
 
+def engineer_news_text_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Feature engineering for news_df, assumes clean_news_df() already ran.
+    Skips: whitespace normalization, NaN filling, published_at parsing, dedup
+    (all handled by clean_news_df already).
+    """
+    df = df.copy()
+
+    def strip_html_urls_boilerplate(text):
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = re.sub(r"http\S+|www\.\S+", " ", text)
+        text = re.sub(r"\[\+\d+\s*chars\]", " ", text)  # NewsAPI truncation artifact
+        return re.sub(r"\s+", " ", text).strip()
+
+    for col in ["title", "description", "content"]:
+        df[f"{col}_clean"] = df[col].apply(strip_html_urls_boilerplate)
+
+    def combine_texts(row):
+        parts, seen = [], set()
+        for col in ["title_clean", "description_clean", "content_clean"]:
+            t = row[col].strip()
+            key = t.lower()
+            if t and key not in seen:
+                parts.append(t)
+                seen.add(key)
+        return " ".join(parts)
+
+    df["full_text"] = df.apply(combine_texts, axis=1)
+
+    for col in ["title_clean", "description_clean", "content_clean", "full_text"]:
+        df[f"{col}_word_count"] = df[col].str.split().apply(len)
+
+    df["title_exclaim_count"] = df["title_clean"].str.count("!")
+    df["title_is_upper_ratio"] = df["title_clean"].apply(
+        lambda t: sum(1 for c in t if c.isupper()) / max(len(t), 1)
+    )
+
+    df["content_truncated"] = df["content"].str.contains(r"\[\+\d+\s*chars\]", regex=True)
+    df["has_description"] = df["description_clean"].str.len() > 0
+    df["has_content"] = df["content_clean"].str.len() > 0
+    df["text_source_quality"] = np.select(
+        [df["has_content"] & df["has_description"],
+         df["has_description"] & ~df["has_content"],
+         ~df["has_description"] & ~df["has_content"]],
+        ["full", "partial", "title_only"]
+    )
+
+    df["pub_year"] = df["published_at"].dt.year
+    df["pub_month"] = df["published_at"].dt.month
+    df["pub_week"] = df["published_at"].dt.isocalendar().week
+    df["pub_dayofweek"] = df["published_at"].dt.day_name()
+
+    return df

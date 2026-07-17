@@ -252,6 +252,7 @@ class PatentBiblioClient:
         df_refs["title"] = titles
         df_refs["abstract"] = abstracts
         df_refs["publication_date"] = pub_dates
+        df_refs["keywords"] = [self.default_keywords] * len(df_refs)
 
         if self.save:
             BASE_DIR = Path(__file__).resolve().parent
