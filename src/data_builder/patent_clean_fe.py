@@ -139,42 +139,49 @@ keyword_sets = {
     ]
 }
 
-patent_frames = []
+def collect_patent_df():
 
-for category, keywords in keyword_sets.items():
+    patent_frames = []
 
-    for keyword in keywords:
+    for category, keywords in keyword_sets.items():
+        for keyword in keywords:
+            try:
+                patent_kw = PatentBiblioClient(
+                    default_keywords=[keyword],
+                    save=False
+                )
 
-        try:
-            patent_kw = PatentBiblioClient(default_keywords=[keyword], save=True)
+                df = patent_kw.fetch_biblio_last_n_years(years_back=1)
 
-            # On a real version year_back should be 5
-            df = patent_kw.fetch_biblio_last_n_years(years_back=1)
+                if df is None or df.empty:
+                    continue
 
-            df["category"] = category
-            df["keyword"] = keyword
+                df["category"] = category
+                df["keyword"] = keyword
 
-            patent_frames.append(df)
-        except Exception as e:
-            print('You hit your patent api limit.')
-            print(e)
-            df=pd.DataFrame()
+                patent_frames.append(df)
 
-if patent_frames != []:
-    news_df = pd.concat(
-        patent_frames,
-        ignore_index=True
-    )
+            except Exception as e:
+                print(f"Could not fetch patents for '{keyword}'.")
+                print(e)
 
-else:
-    print('No patents has be gathered from api.')
+    if patent_frames:
+        patent_df = pd.concat(patent_frames, ignore_index=True)
 
-BASE_DIR = Path(__file__).resolve().parent
-output_dir = BASE_DIR / ".." / ".." / "data" / "raw"
-output_dir.mkdir(parents=True, exist_ok=True)
-filename = f"raw-patent.csv"
-df.to_csv(output_dir / filename, index=False)
-print(f"File {output_dir / filename} saved.")
+        BASE_DIR = Path(__file__).resolve().parent
+        output_dir = BASE_DIR / ".." / ".." / "data" / "raw"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        filename = "raw-patent.csv"
+        output_path = output_dir / filename
+
+        patent_df.to_csv(output_path, index=False)
+
+        print(f"Saved {len(patent_df)} patents to {output_path}")
+
+    else:
+        print("No patents were gathered from the API.")
+        patent_df = pd.DataFrame()
 
 #-------cleaning-------------------------------------------------
 
