@@ -256,5 +256,7 @@ class PatentBiblioClient:
         output_dir = Path("../../data/raw")
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        df_refs.to_csv(output_dir / "raw-patents.csv", index=False)
+        filename = f"raw-patents-{'-'.join(self.default_keywords)}.csv"
+        df_refs.to_csv(output_dir / filename, index=False)
+        
         return df_refs

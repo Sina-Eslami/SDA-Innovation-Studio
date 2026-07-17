@@ -76,8 +76,9 @@ class NewsClient:
 
         output_dir = Path("../../data/raw")
         output_dir.mkdir(parents=True, exist_ok=True)
-
-        df.to_csv(output_dir / "raw-news.csv", index=False)
+        filename = f"raw-patents-{'-'.join(self.default_keywords)}.csv"
+        df.to_csv(output_dir / filename, index=False)
+        
         return df
 
 ###------Helper Functions-------------------------------------------------
