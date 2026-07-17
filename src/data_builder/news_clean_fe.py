@@ -142,39 +142,46 @@ keyword_sets = {
 news_frames = []
 
 for category, keywords in keyword_sets.items():
-
     for keyword in keywords:
-
         try:
-            client = NewsClient(default_keywords=[keyword])
+            client = NewsClient(
+                default_keywords=[keyword],
+                save=False
+            )
 
-            # On a real version year_back should be 5
+            # In production, use years_back=5
             df = client.fetch_last_n_years(years_back=0.08)
+
+            # Skip empty results
+            if df is None or df.empty:
+                continue
 
             df["category"] = category
             df["keyword"] = keyword
 
             news_frames.append(df)
-        except Exception as e:
-            print('You hit your NEWS api limit.')
-            print(e)
-            df = pd.DataFrame()
 
-if news_frames != []:
-    news_df = pd.concat(
-        news_frames,
-        ignore_index=True
-    )
+        except Exception as e:
+            print(f"Could not fetch news for '{keyword}'.")
+            print(e)
+
+if news_frames:
+    news_df = pd.concat(news_frames, ignore_index=True)
+
+    BASE_DIR = Path(__file__).resolve().parent
+    output_dir = BASE_DIR / ".." / ".." / "data" / "raw"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = "raw-news.csv"
+    output_path = output_dir / filename
+
+    news_df.to_csv(output_path, index=False)
+
+    print(f"Saved {len(news_df)} articles to {output_path}")
 
 else:
-    print('No news has be gathered from api.')
-
-BASE_DIR = Path(__file__).resolve().parent
-output_dir = BASE_DIR / ".." / ".." / "data" / "raw"
-output_dir.mkdir(parents=True, exist_ok=True)
-filename = f"raw-news.csv"
-df.to_csv(output_dir / filename, index=False)
-print(f"File {output_dir / filename} saved.")
+    print("No news was gathered from the API.")
+    news_df = pd.DataFrame()
 
 #-------cleaning-------------------------------------------------
 

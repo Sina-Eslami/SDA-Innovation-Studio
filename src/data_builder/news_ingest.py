@@ -78,7 +78,7 @@ class NewsClient:
             BASE_DIR = Path(__file__).resolve().parent
             output_dir = BASE_DIR / ".." / ".." / "data" / "raw"
             output_dir.mkdir(parents=True, exist_ok=True)
-            filename = f"raw-patents-{'-'.join(self.default_keywords)}.csv"
+            filename = f"raw-news-{'-'.join(self.default_keywords)}.csv"
             df.to_csv(output_dir / filename, index=False)
             print(f"File {output_dir / filename} saved.")
         
