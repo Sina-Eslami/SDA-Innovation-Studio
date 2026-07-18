@@ -211,13 +211,6 @@ def cluster_texts_kmeans(texts: list, n_clusters: int = 3) -> dict:
     return cluster_terms
 
 
-# ---------- Placeholder prompts (kept for future LLM integration, unused for now) ----------
-
-PATENTS_SUMMARY_PROMPT = "Summarize who is filing these patents, the approximate filing trend over time, and the key technical concepts mentioned:"
-NEWS_SUMMARY_PROMPT = "Summarize which companies and products are mentioned, and what issues or features are discussed in this news coverage:"
-SOCIAL_SUMMARY_PROMPT = "Summarize the main user pain points, desired features, and overall sentiment discussed in this content:"
-
-
 # ---------- Summary functions ----------
 
 def summarize_patents(df: pd.DataFrame) -> dict:
@@ -237,7 +230,6 @@ def summarize_patents(df: pd.DataFrame) -> dict:
         "top_applicants": top_applicants,
         "key_concepts_tfidf": extract_top_tfidf_terms(texts, top_n=15),
         "key_concepts_noun_phrases": extract_noun_phrases(texts, top_n=15),
-        "prompt_placeholder": PATENTS_SUMMARY_PROMPT,
     }
 
 
@@ -261,7 +253,6 @@ def summarize_news(df: pd.DataFrame) -> dict:
         "companies_mentioned": companies_mentioned,
         "issues_and_features": extract_noun_phrases(texts, top_n=15),
         "avg_sentiment": df["sentiment_polarity"].mean() if "sentiment_polarity" in df.columns else None,
-        "prompt_placeholder": NEWS_SUMMARY_PROMPT,
     }
 
 
@@ -283,7 +274,6 @@ def summarize_reviews_social(reviews_df: pd.DataFrame, social_df: pd.DataFrame) 
 
     pain_desire = extract_pain_points_and_desires(combined_texts, top_n=10)
     result.update(pain_desire)
-    result["prompt_placeholder"] = SOCIAL_SUMMARY_PROMPT
 
     return result
 
