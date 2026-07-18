@@ -200,7 +200,6 @@ def clean_patents_df(df: pd.DataFrame) -> pd.DataFrame:
         )
         df[col] = df[col].replace({"": np.nan, "None": np.nan, "nan": np.nan})
 
-    # Publication date: strip trailing ".0" artifact from float-dtype CSV columns before parsing
     pub_date_str = df["publication_date"].astype("string").str.strip()
     pub_date_str = pub_date_str.str.replace(r"\.0$", "", regex=True)
 
@@ -216,6 +215,24 @@ def clean_patents_df(df: pd.DataFrame) -> pd.DataFrame:
 
     df["doc_id"] = df["country"].fillna("") + df["doc_number"].fillna("") + df["kind"].fillna("")
     df = df.drop_duplicates(subset=["doc_id"], keep="first")
+
+    COUNTRY_NAME_MAP = {
+    "DE": "Germany",
+    "US": "United States",
+    "WO": "World Intellectual Property Organization (PCT)",
+    "EP": "European Patent Office",
+    "JP": "Japan",
+    "GB": "United Kingdom",
+    "CN": "China",
+    "KR": "South Korea",
+    "TR": "Turkey",
+    "SE": "Sweden",
+    "TW": "Taiwan",
+    "AU": "Australia",
+    "MD": "Moldova",
+    "IT": "Italy",
+    }
+    df["country_name"] = df["country"].map(COUNTRY_NAME_MAP).fillna("Unknown")
 
     df = df[~(df["title"].isna() & df["abstract"].isna())]
     df = df.dropna(subset=["publication_date"])

@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 
 from pathlib import Path
+from textblob import TextBlob
+
 
 BASE_DIR = Path(__file__).resolve().parent
 file_dir = BASE_DIR / ".." / ".." / "data" / "static"
@@ -65,5 +67,16 @@ def engineer_topic_features(df: pd.DataFrame) -> pd.DataFrame:
     df["TOPIC_ARTICLE_COUNT"] = df.groupby("TOPIC")["TITLE"].transform("count")
     df["TOPIC_AVG_BODY_LEN"] = df.groupby("TOPIC")["BODY_WORD_COUNT"].transform("mean")
     df["BODY_LEN_VS_TOPIC_AVG"] = df["BODY_WORD_COUNT"] - df["TOPIC_AVG_BODY_LEN"]
+
+    # sentiment
+
+    sentiment_scores = df["FULL_TEXT"].apply(
+    lambda t: TextBlob(str(t)).sentiment if str(t).strip() else (0.0, 0.0))
+    df["SENTIMENT_POLARITY"] = sentiment_scores.apply(lambda s: s[0])
+    df["SENTIMENT_SUBJECTIVITY"] = sentiment_scores.apply(lambda s: s[1])
+    df["SENTIMENT_LABEL"] = pd.cut(
+        df["SENTIMENT_POLARITY"], bins=[-1.01, -0.1, 0.1, 1.01],
+        labels=["negative", "neutral", "positive"]
+    )
 
     return df

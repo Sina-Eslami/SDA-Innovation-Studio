@@ -2,6 +2,8 @@ from src.data_builder.news_ingest import NewsClient
 
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from pathlib import Path
+from textblob import TextBlob
+
 
 import pandas as pd
 import numpy as np
@@ -307,5 +309,16 @@ def engineer_news_text_features(df: pd.DataFrame) -> pd.DataFrame:
     df["pub_month"] = df["published_at"].dt.month
     df["pub_week"] = df["published_at"].dt.isocalendar().week
     df["pub_dayofweek"] = df["published_at"].dt.day_name()
+
+    # sentiment
+    sentiment_scores = df["full_text"].apply(
+    lambda t: TextBlob(str(t)).sentiment if str(t).strip() else (0.0, 0.0)
+    )
+    df["sentiment_polarity"] = sentiment_scores.apply(lambda s: s[0])
+    df["sentiment_subjectivity"] = sentiment_scores.apply(lambda s: s[1])
+    df["sentiment_label"] = pd.cut(
+        df["sentiment_polarity"], bins=[-1.01, -0.1, 0.1, 1.01],
+        labels=["negative", "neutral", "positive"]
+    )
 
     return df
