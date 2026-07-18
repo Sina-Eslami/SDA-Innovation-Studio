@@ -47,10 +47,10 @@ def _keyword_match(series: pd.Series, keywords: list) -> pd.Series:
 
 
 def _years_back_mask(series: pd.Series, years_back) -> pd.Series:
-    dates = pd.to_datetime(series, errors="coerce")
+    dates = pd.to_datetime(series, errors="coerce", utc=True)
     if years_back is None:
         return pd.Series([True] * len(series), index=series.index)
-    cutoff = pd.Timestamp.now() - pd.DateOffset(years=years_back)
+    cutoff = pd.Timestamp.now(tz="UTC") - pd.DateOffset(years=years_back)
     return dates >= cutoff
 
 
@@ -262,6 +262,9 @@ def summarize_reviews_social(reviews_df: pd.DataFrame, social_df: pd.DataFrame) 
     result["avg_review_sentiment"] = (
         reviews_df["SENTIMENT_POLARITY"].mean() if not reviews_df.empty and "SENTIMENT_POLARITY" in reviews_df.columns else None
     )
+    result["avg_social_sentiment"] = (
+        social_df["SENTIMENT_POLARITY"].mean() if not social_df.empty and "SENTIMENT_POLARITY" in social_df.columns else None
+    )
     result["avg_rating"] = (
         reviews_df["RATING"].mean() if not reviews_df.empty and "RATING" in reviews_df.columns else None
     )
@@ -286,7 +289,7 @@ def summarize_catalog(df: pd.DataFrame) -> dict:
         "n_products": len(df),
         "appliance_breakdown": df["Appliance"].value_counts().to_dict() if "Appliance" in df.columns else {},
         "energy_tier_breakdown": df["ENERGY_TIER"].value_counts().to_dict() if "ENERGY_TIER" in df.columns else {},
-        "top_brands": df["Brand"].value_counts().head(10).to_dict() if "Brand" in df.columns else {},
+        "top_brands": df["Brand"].value_counts().head(6).to_dict() if "Brand" in df.columns else {},
     }
 
 

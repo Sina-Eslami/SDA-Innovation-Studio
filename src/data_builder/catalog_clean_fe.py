@@ -59,10 +59,18 @@ def engineer_catalog_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     watt_mask = df["ENERGY_UNIT"] == "W"
-    df["ENERGY_TIER"] = pd.cut(
-        df.loc[watt_mask, "ENERGY_VALUE"],
-        bins=[0, 500, 1000, 1500, np.inf],
-        labels=["low", "medium", "high", "very_high"]
+    energy_values = df.loc[watt_mask, "ENERGY_VALUE"]
+
+    min_val = energy_values.min()
+    max_val = energy_values.max()
+
+    bins = np.linspace(min_val, max_val, 4)
+
+    df.loc[watt_mask, "ENERGY_TIER"] = pd.cut(
+        energy_values,
+        bins=bins,
+        labels=["low", "medium", "high"],
+        include_lowest=True
     )
 
     df["BRAND_PRODUCT_COUNT"] = df.groupby("Brand")["SKU"].transform("count")
