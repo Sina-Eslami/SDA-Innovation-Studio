@@ -666,13 +666,13 @@ def render_patents_globe(patents_df: pd.DataFrame):
             </div>
             """
             st.markdown(signal_html, unsafe_allow_html=True)
-        signal_html = f"""
-        <div class="signal-box">
-            <div class="metric-line" style="margin-top:0.8rem;"><b>Discussed aspects</b></div>
-            {render_dict_list(reviews_social_summary.get("top_discussed_aspects", []))}
-        </div>
-        """
-        st.markdown(signal_html, unsafe_allow_html=True)
+        # signal_html = f"""
+        # <div class="signal-box">
+        #     <div class="metric-line" style="margin-top:0.8rem;"><b>Discussed aspects</b></div>
+        #     {render_dict_list(reviews_social_summary.get("top_discussed_aspects", []))}
+        # </div>
+        # """
+        # st.markdown(signal_html, unsafe_allow_html=True)
 
         st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Catalog</h4></div>', unsafe_allow_html=True)
         col_brands, col_energy = st.columns([1,1])
@@ -697,11 +697,11 @@ def render_patents_globe(patents_df: pd.DataFrame):
         st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Opportunity Assessment</h4></div>', unsafe_allow_html=True)
 
         innovation_spider(
-        desirability=dvf_score.get("desirability_score"), 
-        viability=dvf_score.get("viability_score"), 
-        feasibility=dvf_score.get("feasibility_score"), 
-        social_sentiment=reviews_social_summary.get("avg_social_sentiment"), 
-        reviews_rating=reviews_social_summary.get("avg_rating"),
+        desirability=round(dvf_score.get("desirability_score"), 2), 
+        viability=round(dvf_score.get("viability_score"), 2), 
+        feasibility=round(dvf_score.get("feasibility_score"), 2), 
+        social_sentiment=round(reviews_social_summary.get("avg_social_sentiment"), 2), 
+        reviews_rating=round(reviews_social_summary.get("avg_rating"), 2),
         )
 
         score_summary(
@@ -713,18 +713,42 @@ def render_patents_globe(patents_df: pd.DataFrame):
 #------------------------------------------------
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
-st.markdown('<div class="app-title">SDA Innovation Studio</div>', unsafe_allow_html=True)
-st.markdown(
-    """
-    <div class="app-subtitle">
-    This app performs multi-source NLP analysis across patents, news, product reviews, social media,
-    and product catalogs to surface innovation-relevant signals. Enter a theme below to gather intelligence
-    on market demand and existing supply, and get a lightweight Desirability, Viability, and Feasibility (D-V-F)
-    read on the opportunity space.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+col_info, col_dl_button = st.columns([7,1])
+with col_info:
+    st.markdown('<div class="app-title">SDA Innovation Studio</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="app-subtitle">
+        This app performs multi-source NLP analysis across patents, news, product reviews, social media,
+        and product catalogs to surface innovation-relevant signals. Enter a theme below to gather intelligence
+        on market demand and existing supply, and get a lightweight Desirability, Viability, and Feasibility (D-V-F)
+        read on the opportunity space.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+with col_dl_button:
+    components.html("""
+    <script>
+    function printPage() {
+        window.parent.print();
+    }
+    </script>
+
+    <button onclick="printPage()" style="
+        background: linear-gradient(135deg, #6b8fe0, #2b4fc9);
+        color: white;
+        border: none;
+        border-radius: 16px;
+        padding: 12px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+    ">
+    ⬇ Download Dashboard as PDF
+    </button>
+    """, height=70)
+
 
 COUNTRY_OPTIONS = [
     "All countries", "Germany", "United States",
@@ -778,7 +802,6 @@ if gather_clicked:
             years_back=years_back,
             country=country
         )
-
         patents_summary = summarize_patents(filtered["patents"])
         news_summary = summarize_news(filtered["news"])
         reviews_social_summary = summarize_reviews_social(

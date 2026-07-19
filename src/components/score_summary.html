@@ -73,6 +73,34 @@ body {
     font-weight:bold;
 }
 
+.score-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.score {
+    font-size: 88px;
+    font-weight: 700;
+}
+
+.info-icon {
+    position: absolute;
+    bottom: -4px;
+    right: -20px;
+    width: 26px;
+    height: 26px;
+    font-size: 20px;
+    font-style: italic;
+    font-weight: 600;
+    color: #6b8fe0;
+    background-color: #eef0f5;
+    border-radius: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
 
 </style>
 
@@ -85,8 +113,11 @@ body {
 <div class="container">
 
 
-    <div id="score" class="score">
-        __AVERAGE__%
+    <div id="score" class="score-wrapper">
+        <div id="score" class="score">
+            __AVERAGE__%
+        </div>
+        <span class="info-icon" title="How this score is calculated">i</span>
     </div>
 
     <div class="subtitle">

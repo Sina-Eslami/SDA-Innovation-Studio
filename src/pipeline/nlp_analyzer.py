@@ -3,6 +3,7 @@ import re
 import pandas as pd
 import numpy as np
 from collections import Counter
+import streamlit as st
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
@@ -104,7 +105,7 @@ def filter_social(keywords: list) -> pd.DataFrame:
         return df
     return df[_keyword_match(df["TOPIC"], keywords)].reset_index(drop=True)
 
-
+@st.cache_data(show_spinner="Filtering data...")
 def run_filters(keywords: list, years_back=None, country=None) -> dict:
     return {
         "catalog": filter_catalog(keywords),
@@ -225,6 +226,7 @@ def cluster_texts_kmeans(texts: list, n_clusters: int = 3) -> dict:
 
 # ---------- Summary functions ----------
 
+@st.cache_data(show_spinner="Analyzing patents...")
 def summarize_patents(df: pd.DataFrame) -> dict:
     if df.empty:
         return {"n_patents": 0, "volume_by_year": {}, "top_filing_countries": {}, "top_applicants": {}, "key_concepts_tfidf": [], "key_concepts_noun_phrases": []}
@@ -244,7 +246,7 @@ def summarize_patents(df: pd.DataFrame) -> dict:
         "key_concepts_noun_phrases": extract_noun_phrases(texts, top_n=15),
     }
 
-
+@st.cache_data(show_spinner="Analyzing news...")
 def summarize_news(df: pd.DataFrame) -> dict:
     if df.empty:
         return {"n_articles": 0, "companies_mentioned": [], "issues_and_features": []}
@@ -267,7 +269,7 @@ def summarize_news(df: pd.DataFrame) -> dict:
         "avg_sentiment": df["sentiment_polarity"].mean() if "sentiment_polarity" in df.columns else None,
     }
 
-
+@st.cache_data(show_spinner="Analyzing reviews and socials...")
 def summarize_reviews_social(reviews_df: pd.DataFrame, social_df: pd.DataFrame) -> dict:
     result = {"n_reviews": len(reviews_df), "n_social_posts": len(social_df)}
 
@@ -291,30 +293,48 @@ def summarize_reviews_social(reviews_df: pd.DataFrame, social_df: pd.DataFrame) 
     result.update(pain_desire)
     result["desirability"] = (
     100 if pain_desire["pain_volume"] == 0
-    else 100*(pain_desire["desire_volume"] / pain_desire["pain_volume"])
+    else 100*(pain_desire["desire_volume"] / (pain_desire["pain_volume"] + pain_desire["desire_volume"]))
     )
 
     return result
 
-
+@st.cache_data(show_spinner="Analyzing catalogs...")
 def summarize_catalog(df: pd.DataFrame) -> dict:
     if df.empty:
-        return {"n_products": 0, "appliance_breakdown": {}, "energy_tier_breakdown": {}, "top_brands": {}}
+        return {
+            "n_products": 0,
+            "appliance_breakdown": {},
+            "energy_tier_breakdown": {},
+            "top_brands": {},
+            "catalog_overlap": 0,
+        }
+
+    n_products = len(df)
+
+    appliance_counts = df["Appliance"].value_counts() if "Appliance" in df.columns else pd.Series(dtype=int)
+    catalog_overlap = n_products/9000
 
     return {
-        "n_products": len(df),
-        "appliance_breakdown": df["Appliance"].value_counts().to_dict() if "Appliance" in df.columns else {},
+        "n_products": n_products,
+        "appliance_breakdown": appliance_counts.to_dict(),
         "energy_tier_breakdown": df["ENERGY_TIER"].value_counts().to_dict() if "ENERGY_TIER" in df.columns else {},
         "top_brands": df["Brand"].value_counts().head(6).to_dict() if "Brand" in df.columns else {},
+        "catalog_overlap": catalog_overlap,
     }
 
 
 # ---------- D-V-F scoring (placeholder) ----------
+def compute_feasibility_score(patent_count: int, catalog_overlap_ratio: float, news_sentiment: float) -> float:
+    patent_score = 1.0 if patent_count > 0 else 0.0
+    catalog_score = catalog_overlap_ratio
+    sentiment_score = news_sentiment
+
+    return round(100*(patent_score + catalog_score + sentiment_score) / 3)
 
 def calculate_dvf_score(patents_summary: dict, news_summary: dict, reviews_social_summary: dict, catalog_summary: dict) -> dict:
     desirability = reviews_social_summary.get("desirability")
-    viability = (reviews_social_summary.get("desirability")/3) + 100*(reviews_social_summary.get("avg_social_sentiment")/3) + ((reviews_social_summary.get("avg_rating")-1)*25/3)
-    feasibility = 61
+    viability = (reviews_social_summary.get("desirability")/5) + 200*(reviews_social_summary.get("avg_social_sentiment")/5) + ((reviews_social_summary.get("avg_rating")-1)*50/5)
+    feasibility = compute_feasibility_score(patent_count=patents_summary.get('n_patents'), catalog_overlap_ratio=catalog_summary['catalog_overlap'], news_sentiment= news_summary['avg_sentiment'],)
 
     def score_to_label(score):
         if score >= 70:
