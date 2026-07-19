@@ -105,7 +105,7 @@ def filter_social(keywords: list) -> pd.DataFrame:
         return df
     return df[_keyword_match(df["TOPIC"], keywords)].reset_index(drop=True)
 
-@st.cache_data(show_spinner="Filtering data...")
+# @st.cache_data(show_spinner="Filtering data...")
 def run_filters(keywords: list, years_back=None, country=None) -> dict:
     return {
         "catalog": filter_catalog(keywords),
@@ -226,7 +226,7 @@ def cluster_texts_kmeans(texts: list, n_clusters: int = 3) -> dict:
 
 # ---------- Summary functions ----------
 
-@st.cache_data(show_spinner="Analyzing patents...")
+# @st.cache_data(show_spinner="Analyzing patents...")
 def summarize_patents(df: pd.DataFrame) -> dict:
     if df.empty:
         return {"n_patents": 0, "volume_by_year": {}, "top_filing_countries": {}, "top_applicants": {}, "key_concepts_tfidf": [], "key_concepts_noun_phrases": []}
@@ -246,7 +246,7 @@ def summarize_patents(df: pd.DataFrame) -> dict:
         "key_concepts_noun_phrases": extract_noun_phrases(texts, top_n=15),
     }
 
-@st.cache_data(show_spinner="Analyzing news...")
+# @st.cache_data(show_spinner="Analyzing news...")
 def summarize_news(df: pd.DataFrame) -> dict:
     if df.empty:
         return {"n_articles": 0, "companies_mentioned": [], "issues_and_features": []}
@@ -269,7 +269,7 @@ def summarize_news(df: pd.DataFrame) -> dict:
         "avg_sentiment": df["sentiment_polarity"].mean() if "sentiment_polarity" in df.columns else None,
     }
 
-@st.cache_data(show_spinner="Analyzing reviews and socials...")
+# @st.cache_data(show_spinner="Analyzing reviews and socials...")
 def summarize_reviews_social(reviews_df: pd.DataFrame, social_df: pd.DataFrame) -> dict:
     result = {"n_reviews": len(reviews_df), "n_social_posts": len(social_df)}
 
@@ -298,7 +298,7 @@ def summarize_reviews_social(reviews_df: pd.DataFrame, social_df: pd.DataFrame) 
 
     return result
 
-@st.cache_data(show_spinner="Analyzing catalogs...")
+# @st.cache_data(show_spinner="Analyzing catalogs...")
 def summarize_catalog(df: pd.DataFrame) -> dict:
     if df.empty:
         return {

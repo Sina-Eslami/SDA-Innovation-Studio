@@ -802,13 +802,17 @@ if gather_clicked:
             years_back=years_back,
             country=country
         )
-        patents_summary = summarize_patents(filtered["patents"])
-        news_summary = summarize_news(filtered["news"])
-        reviews_social_summary = summarize_reviews_social(
+        with st.spinner("Analyzing patents..."):
+            patents_summary = summarize_patents(filtered["patents"])
+        with st.spinner("Analyzing news..."):
+            news_summary = summarize_news(filtered["news"])
+        with st.spinner("Analyzing reviews and socials..."):
+            reviews_social_summary = summarize_reviews_social(
             filtered["reviews"],
             filtered["social"]
-        )
-        catalog_summary = summarize_catalog(filtered["catalog"])
+            )
+        with st.spinner("Analyzing catalogs..."):
+            catalog_summary = summarize_catalog(filtered["catalog"])
         dvf_score = calculate_dvf_score(
             patents_summary=patents_summary,
             news_summary=news_summary,
