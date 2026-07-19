@@ -167,6 +167,9 @@ def extract_pain_points_and_desires(texts: list, top_n: int = 10) -> dict:
     pain_phrase_counter = Counter()
     desire_phrase_counter = Counter()
 
+    pain_volume = 0
+    desire_volume = 0
+
     for text in texts:
         for pattern in PAIN_POINT_PATTERNS:
             for match in re.finditer(re.escape(pattern), text):
@@ -175,6 +178,7 @@ def extract_pain_points_and_desires(texts: list, top_n: int = 10) -> dict:
                 snippet = re.split(r"[.!?,;]", snippet)[0].strip()
                 if snippet:
                     pain_phrase_counter[f"{pattern} -> {snippet}"] += 1
+                    pain_volume += len(snippet)
 
         for pattern in DESIRE_PATTERNS:
             for match in re.finditer(re.escape(pattern), text):
@@ -183,13 +187,21 @@ def extract_pain_points_and_desires(texts: list, top_n: int = 10) -> dict:
                 snippet = re.split(r"[.!?,;]", snippet)[0].strip()
                 if snippet:
                     desire_phrase_counter[f"{pattern} -> {snippet}"] += 1
+                    desire_volume += len(snippet)
 
     noun_phrases = extract_noun_phrases(texts, top_n=top_n)
+
+    desirability_score = (
+        round(desire_volume / pain_volume, 3) if pain_volume > 0 else None
+    )
 
     return {
         "top_pain_signals": [p for p, _ in pain_phrase_counter.most_common(top_n)],
         "top_desire_signals": [p for p, _ in desire_phrase_counter.most_common(top_n)],
         "top_discussed_aspects": noun_phrases,
+        "pain_volume": pain_volume,
+        "desire_volume": desire_volume,
+        "desirability_score": desirability_score,
     }
 
 
@@ -277,6 +289,10 @@ def summarize_reviews_social(reviews_df: pd.DataFrame, social_df: pd.DataFrame) 
 
     pain_desire = extract_pain_points_and_desires(combined_texts, top_n=10)
     result.update(pain_desire)
+    result["desirability"] = (
+    100 if pain_desire["pain_volume"] == 0
+    else 100*(pain_desire["desire_volume"] / pain_desire["pain_volume"])
+    )
 
     return result
 
@@ -296,9 +312,9 @@ def summarize_catalog(df: pd.DataFrame) -> dict:
 # ---------- D-V-F scoring (placeholder) ----------
 
 def calculate_dvf_score(patents_summary: dict, news_summary: dict, reviews_social_summary: dict, catalog_summary: dict) -> dict:
-    desirability = 50
-    viability = 50
-    feasibility = 50
+    desirability = reviews_social_summary.get("desirability")
+    viability = (reviews_social_summary.get("desirability")/3) + 100*(reviews_social_summary.get("avg_social_sentiment")/3) + ((reviews_social_summary.get("avg_rating")-1)*25/3)
+    feasibility = 61
 
     def score_to_label(score):
         if score >= 70:

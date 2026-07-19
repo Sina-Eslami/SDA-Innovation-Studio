@@ -7,6 +7,9 @@ import plotly.graph_objects as go
 
 import streamlit.components.v1 as components
 
+from src.components.spider_chart import innovation_spider
+from src.components.score_summary import score_summary
+
 from src.prompt_reader import parse_prompt
 from src.pipeline.nlp_analyzer import (
     run_filters,
@@ -14,6 +17,7 @@ from src.pipeline.nlp_analyzer import (
     summarize_news,
     summarize_reviews_social,
     summarize_catalog,
+    calculate_dvf_score,
 )
 
 st.set_page_config(page_title="SDA Innovation Studio", layout="wide")
@@ -25,7 +29,7 @@ CUSTOM_CSS = """
 .app-title {
     font-size: 2.6rem;
     font-weight: 800;
-    color: #1a1a2e;
+    color: "#2b4fc9";
     margin-bottom: 0.2rem;
 }
 
@@ -540,7 +544,6 @@ def catalog_pie_chart(data):
         fig,
         use_container_width=True
     )
-#-------------------------------
 
 def render_patents_globe(patents_df: pd.DataFrame):
     map_data = build_patents_map_data(patents_df)
@@ -582,9 +585,10 @@ def render_patents_globe(patents_df: pd.DataFrame):
         geo=dict(bgcolor="rgba(0,0,0,0)"),
     )
 
-    col_patent_catalog, col_review_social = st.columns([1, 1])
-    with col_patent_catalog:
+    col_sources, col_assess = st.columns([2, 1])
+    with col_sources:
         st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Patents by Country</h4></div>', unsafe_allow_html=True)
+        
         col_map, col_table = st.columns([2.2, 1])
 
         with col_map:
@@ -592,8 +596,7 @@ def render_patents_globe(patents_df: pd.DataFrame):
 
         with col_table:
             table_df = (
-                map_data
-                .sort_values("patent_count", ascending=False)
+                map_data.sort_values("patent_count", ascending=False)
                 .head(10)
                 [["country_name", "patent_count"]]
                 .copy()
@@ -641,6 +644,36 @@ def render_patents_globe(patents_df: pd.DataFrame):
             </div>
             """
             st.markdown(concepts_box_html, unsafe_allow_html=True)
+
+        col_social , col_review = st.columns([1, 1])
+        with col_social:
+            st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Social Sentiments</h4></div>', unsafe_allow_html=True)
+            sentiment_gauge(reviews_social_summary.get("avg_social_sentiment"))
+            signal_html = f"""
+            <div class="signal-box">
+                <div class="metric-line" style="margin-top:0.8rem;"><b>Desired features</b></div>
+                {render_dict_list(reviews_social_summary.get("top_desire_signals", []), css_class="tag tag-desire")}
+            </div>
+            """
+            st.markdown(signal_html, unsafe_allow_html=True)
+        with col_review:
+            st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Review Ratings</h4></div>', unsafe_allow_html=True)
+            rating_guage(reviews_social_summary.get("avg_rating"))
+            signal_html = f"""
+            <div class="signal-box">
+                <div class="metric-line"><b>Top pain points</b></div>
+                {render_dict_list(reviews_social_summary.get("top_pain_signals", []), css_class="tag tag-pain")}
+            </div>
+            """
+            st.markdown(signal_html, unsafe_allow_html=True)
+        signal_html = f"""
+        <div class="signal-box">
+            <div class="metric-line" style="margin-top:0.8rem;"><b>Discussed aspects</b></div>
+            {render_dict_list(reviews_social_summary.get("top_discussed_aspects", []))}
+        </div>
+        """
+        st.markdown(signal_html, unsafe_allow_html=True)
+
         st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Catalog</h4></div>', unsafe_allow_html=True)
         col_brands, col_energy = st.columns([1,1])
         with col_brands:
@@ -660,38 +693,22 @@ def render_patents_globe(patents_df: pd.DataFrame):
             st.markdown(energy_tiers_text, unsafe_allow_html=True)
             catalog_pie_chart(catalog_summary.get('energy_tier_breakdown'))
 
+    with col_assess:
+        st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Opportunity Assessment</h4></div>', unsafe_allow_html=True)
 
-        with col_review_social:
-            col_social , col_review = st.columns([1, 1])
-            with col_social:
-                st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Social Sentiments</h4></div>', unsafe_allow_html=True)
-                sentiment_gauge(reviews_social_summary.get("avg_social_sentiment"))
-                signal_html = f"""
-                <div class="signal-box">
-                    <div class="metric-line" style="margin-top:0.8rem;"><b>Desired features</b></div>
-                    {render_dict_list(reviews_social_summary.get("top_desire_signals", []), css_class="tag tag-desire")}
-                </div>
-                """
-                st.markdown(signal_html, unsafe_allow_html=True)
-            with col_review:
-                st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Review Ratings</h4></div>', unsafe_allow_html=True)
-                rating_guage(reviews_social_summary.get("avg_rating"))
-                signal_html = f"""
-                <div class="signal-box">
-                    <div class="metric-line"><b>Top pain points</b></div>
-                    {render_dict_list(reviews_social_summary.get("top_pain_signals", []), css_class="tag tag-pain")}
-                </div>
-                """
-                st.markdown(signal_html, unsafe_allow_html=True)
-            signal_html = f"""
-            <div class="signal-box">
-                <div class="metric-line" style="margin-top:0.8rem;"><b>Discussed aspects</b></div>
-                {render_dict_list(reviews_social_summary.get("top_discussed_aspects", []))}
-            </div>
-            """
-            st.markdown(signal_html, unsafe_allow_html=True)
-          
+        innovation_spider(
+        desirability=dvf_score.get("desirability_score"), 
+        viability=dvf_score.get("viability_score"), 
+        feasibility=dvf_score.get("feasibility_score"), 
+        social_sentiment=reviews_social_summary.get("avg_social_sentiment"), 
+        reviews_rating=reviews_social_summary.get("avg_rating"),
+        )
 
+        score_summary(
+        desirability=dvf_score.get("desirability_score"), 
+        viability=dvf_score.get("viability_score"), 
+        feasibility=dvf_score.get("feasibility_score"),
+        ) 
 
 #------------------------------------------------
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
@@ -769,6 +786,12 @@ if gather_clicked:
             filtered["social"]
         )
         catalog_summary = summarize_catalog(filtered["catalog"])
+        dvf_score = calculate_dvf_score(
+            patents_summary=patents_summary,
+            news_summary=news_summary,
+            reviews_social_summary=reviews_social_summary,
+            catalog_summary=catalog_summary,
+        )
 
     st.session_state["filtered"] = filtered
     st.session_state["patents_summary"] = patents_summary
@@ -776,6 +799,7 @@ if gather_clicked:
     st.session_state["reviews_social_summary"] = reviews_social_summary
     st.session_state["catalog_summary"] = catalog_summary
     st.session_state["has_results"] = True
+    st.session_state['dvf_score'] = dvf_score
 
 
 if st.session_state.get("has_results"):
@@ -783,101 +807,9 @@ if st.session_state.get("has_results"):
     news_summary = st.session_state["news_summary"]
     reviews_social_summary = st.session_state["reviews_social_summary"]
     catalog_summary = st.session_state["catalog_summary"]
+    dvf_score = st.session_state['dvf_score']
 
     st.markdown("<br>", unsafe_allow_html=True)
     render_patents_globe(st.session_state["filtered"]["patents"])
 
     st.markdown("<br>", unsafe_allow_html=True)
-
-    c1, c2, c3, c4 = st.columns(4)
-
-    with c1:
-        top_countries_str = ", ".join(list(patents_summary.get("top_filing_countries", {}).keys())[:3]) or "N/A"
-        card_html = f"""
-        <div class="summary-card">
-            <h4>Patent Summary</h4>
-            <div class="metric-line"><b>Patents found</b>: {patents_summary.get("n_patents", 0)}</div>
-            <div class="metric-line"><b>Top filing countries</b>: {top_countries_str}</div>
-            <div class="metric-line"><b>Key concepts</b></div>
-            {render_dict_list(patents_summary.get("key_concepts_tfidf", [])[:8])}
-        </div>
-        """
-        st.markdown(card_html, unsafe_allow_html=True)
-
-    with c2:
-        avg_sent = news_summary.get("avg_sentiment")
-        avg_sent_str = f"{avg_sent:.2f}" if avg_sent is not None else "N/A"
-        card_html = f"""
-        <div class="summary-card">
-            <h4>News Summary</h4>
-            <div class="metric-line"><b>Articles found</b>: {news_summary.get("n_articles", 0)}</div>
-            <div class="metric-line"><b>Avg sentiment</b>: {avg_sent_str}</div>
-            <div class="metric-line"><b>Companies mentioned</b></div>
-            {render_dict_list(news_summary.get("companies_mentioned", [])[:8])}
-            <div class="metric-line"><b>Issues & features</b></div>
-            {render_dict_list(news_summary.get("issues_and_features", [])[:8])}
-        </div>
-        """
-        st.markdown(card_html, unsafe_allow_html=True)
-
-    with c3:
-        avg_r_sent = reviews_social_summary.get("avg_review_sentiment")
-        avg_rating = reviews_social_summary.get("avg_rating")
-        avg_r_sent_str = f"{avg_r_sent:.2f}" if avg_r_sent is not None else "N/A"
-        avg_rating_str = f"{avg_rating:.2f}" if avg_rating is not None else "N/A"
-        card_html = f"""
-        <div class="summary-card">
-            <h4>Reviews & Social Summary</h4>
-            <div class="metric-line"><b>Reviews found</b>: {reviews_social_summary.get("n_reviews", 0)}</div>
-            <div class="metric-line"><b>Social posts found</b>: {reviews_social_summary.get("n_social_posts", 0)}</div>
-            <div class="metric-line"><b>Avg rating</b>: {avg_rating_str}</div>
-            <div class="metric-line"><b>Avg review sentiment</b>: {avg_r_sent_str}</div>
-        </div>
-        """
-        st.markdown(card_html, unsafe_allow_html=True)
-
-    with c4:
-        card_html = f"""
-        <div class="summary-card">
-            <h4>Catalogs Summary</h4>
-            <div class="metric-line"><b>Products found</b>: {catalog_summary.get("n_products", 0)}</div>
-            <div class="metric-line"><b>Appliance types</b></div>
-            {render_dict_list(list(catalog_summary.get("appliance_breakdown", {}).keys())[:8])}
-            <div class="metric-line"><b>Top brands</b></div>
-            {render_dict_list(list(catalog_summary.get("top_brands", {}).keys())[:8])}
-        </div>
-        """
-        st.markdown(card_html, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    d1, d2 = st.columns(2)
-
-    with d1:
-        signal_html = f"""
-        <div class="signal-box">
-            <h4>Demand Signals</h4>
-            <div class="metric-line"><b>Top pain points</b></div>
-            {render_dict_list(reviews_social_summary.get("top_pain_signals", []), css_class="tag tag-pain")}
-            <div class="metric-line" style="margin-top:0.8rem;"><b>Desired features</b></div>
-            {render_dict_list(reviews_social_summary.get("top_desire_signals", []), css_class="tag tag-desire")}
-            <div class="metric-line" style="margin-top:0.8rem;"><b>Discussed aspects</b></div>
-            {render_dict_list(reviews_social_summary.get("top_discussed_aspects", []))}
-        </div>
-        """
-        st.markdown(signal_html, unsafe_allow_html=True)
-
-    with d2:
-        signal_html = f"""
-        <div class="signal-box">
-            <h4>Supply Signals</h4>
-            <div class="metric-line"><b>Existing product types</b></div>
-            {render_dict_list(list(catalog_summary.get("appliance_breakdown", {}).keys()))}
-            <div class="metric-line" style="margin-top:0.8rem;"><b>Key patent concepts</b></div>
-            {render_dict_list(patents_summary.get("key_concepts_noun_phrases", [])[:10])}
-            <div class="metric-line" style="margin-top:0.8rem;"><b>Companies active in news</b></div>
-            {render_dict_list(news_summary.get("companies_mentioned", [])[:10])}
-        </div>
-        """
-        st.markdown(signal_html, unsafe_allow_html=True)
-
