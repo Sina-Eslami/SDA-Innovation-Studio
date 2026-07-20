@@ -18,3 +18,6 @@ This tool lets a non-technical innovation or product manager select an opportuni
 
 ## Link to the deployed dashboard:
 https://sda-innovation-studio.streamlit.app/
+
+## Link to the presentation:
+https://docs.google.com/presentation/d/16ySUaVORkimo2DZzFa-I29qlflRfRXHj4Y2cnuHGfZM/edit?usp=sharing
