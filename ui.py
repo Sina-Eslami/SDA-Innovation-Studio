@@ -797,49 +797,54 @@ def render_metric_lines(pairs):
 
 
 if gather_clicked:
-    keywords = parse_prompt(theme_input)
+    try:
+        keywords = parse_prompt(theme_input)
 
-    with st.spinner("Gathering intel across sources..."):
-        filtered = run_filters(
-            keywords,
-            years_back=years_back,
-            country=country
-        )
-        with st.spinner("Analyzing patents..."):
-            patents_summary = summarize_patents(filtered["patents"])
-        with st.spinner("Analyzing news..."):
-            news_summary = summarize_news(filtered["news"])
-        with st.spinner("Analyzing reviews and socials..."):
-            reviews_social_summary = summarize_reviews_social(
-            filtered["reviews"],
-            filtered["social"]
+        with st.spinner("Gathering intel across sources..."):
+            filtered = run_filters(
+                keywords,
+                years_back=years_back,
+                country=country
             )
-        with st.spinner("Analyzing catalogs..."):
-            catalog_summary = summarize_catalog(filtered["catalog"])
-        dvf_score = calculate_dvf_score(
-            patents_summary=patents_summary,
-            news_summary=news_summary,
-            reviews_social_summary=reviews_social_summary,
-            catalog_summary=catalog_summary,
-        )
+            with st.spinner("Analyzing patents..."):
+                patents_summary = summarize_patents(filtered["patents"])
+            with st.spinner("Analyzing news..."):
+                news_summary = summarize_news(filtered["news"])
+            with st.spinner("Analyzing reviews and socials..."):
+                reviews_social_summary = summarize_reviews_social(
+                filtered["reviews"],
+                filtered["social"]
+                )
+            with st.spinner("Analyzing catalogs..."):
+                catalog_summary = summarize_catalog(filtered["catalog"])
+            dvf_score = calculate_dvf_score(
+                patents_summary=patents_summary,
+                news_summary=news_summary,
+                reviews_social_summary=reviews_social_summary,
+                catalog_summary=catalog_summary,
+            )
 
-    st.session_state["filtered"] = filtered
-    st.session_state["patents_summary"] = patents_summary
-    st.session_state["news_summary"] = news_summary
-    st.session_state["reviews_social_summary"] = reviews_social_summary
-    st.session_state["catalog_summary"] = catalog_summary
-    st.session_state["has_results"] = True
-    st.session_state['dvf_score'] = dvf_score
+        st.session_state["filtered"] = filtered
+        st.session_state["patents_summary"] = patents_summary
+        st.session_state["news_summary"] = news_summary
+        st.session_state["reviews_social_summary"] = reviews_social_summary
+        st.session_state["catalog_summary"] = catalog_summary
+        st.session_state["has_results"] = True
+        st.session_state['dvf_score'] = dvf_score
 
 
-if st.session_state.get("has_results"):
-    patents_summary = st.session_state["patents_summary"]
-    news_summary = st.session_state["news_summary"]
-    reviews_social_summary = st.session_state["reviews_social_summary"]
-    catalog_summary = st.session_state["catalog_summary"]
-    dvf_score = st.session_state['dvf_score']
+        if st.session_state.get("has_results"):
+            patents_summary = st.session_state["patents_summary"]
+            news_summary = st.session_state["news_summary"]
+            reviews_social_summary = st.session_state["reviews_social_summary"]
+            catalog_summary = st.session_state["catalog_summary"]
+            dvf_score = st.session_state['dvf_score']
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    render_patents_globe(st.session_state["filtered"]["patents"])
+            st.markdown("<br>", unsafe_allow_html=True)
+            render_patents_globe(st.session_state["filtered"]["patents"])
 
-    st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+    
+    except Exception as e:
+        st.error("Please reboot the app or search for another theme.")
+        st.session_state["has_results"] = False
