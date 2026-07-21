@@ -700,18 +700,18 @@ def render_patents_globe(patents_df: pd.DataFrame):
         st.markdown('<div class="summary-card" style="min-height:auto;"><h4>Opportunity Assessment</h4></div>', unsafe_allow_html=True)
 
         innovation_spider(
-        desirability=round(dvf_score.get("desirability_score"), 2), 
-        viability=round(dvf_score.get("viability_score"), 2), 
-        feasibility=round(dvf_score.get("feasibility_score"), 2), 
-        social_sentiment=round(reviews_social_summary.get("avg_social_sentiment"), 2), 
-        reviews_rating=round(reviews_social_summary.get("avg_rating") if isinstance(reviews_social_summary.get("avg_rating"), (int, float)) else 3, 2),
+            desirability=round(dvf_score.get("desirability_score") if isinstance(dvf_score.get("desirability_score"), (int, float)) else 50, 2),
+            viability=round(dvf_score.get("viability_score") if isinstance(dvf_score.get("viability_score"), (int, float)) else 50, 2),
+            feasibility=round(dvf_score.get("feasibility_score") if isinstance(dvf_score.get("feasibility_score"), (int, float)) else 50, 2),
+            social_sentiment=round(reviews_social_summary.get("avg_social_sentiment") if isinstance(reviews_social_summary.get("avg_social_sentiment"), (int, float)) else 50, 2),
+            reviews_rating=round(reviews_social_summary.get("avg_rating") if isinstance(reviews_social_summary.get("avg_rating"), (int, float)) else 3, 2),
         )
 
         score_summary(
-        desirability=dvf_score.get("desirability_score"), 
-        viability=dvf_score.get("viability_score"), 
-        feasibility=dvf_score.get("feasibility_score"),
-        ) 
+            desirability=dvf_score.get("desirability_score") if isinstance(dvf_score.get("desirability_score"), (int, float)) else 50,
+            viability=dvf_score.get("viability_score") if isinstance(dvf_score.get("viability_score"), (int, float)) else 50,
+            feasibility=dvf_score.get("feasibility_score") if isinstance(dvf_score.get("feasibility_score"), (int, float)) else 50,
+        )
 
 #------------------------------------------------
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
