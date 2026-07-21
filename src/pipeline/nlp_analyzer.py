@@ -329,7 +329,15 @@ def summarize_catalog(df: pd.DataFrame) -> dict:
     }
 
 
-# ---------- D-V-F scoring (placeholder) ----------
+# ---------- D-V-F scoring ----------------------
+
+def safe_number(value, default=50):
+    return value if isinstance(value, (int, float)) else default
+
+def safe_number_rating(value, default=3):
+    return value if isinstance(value, (int, float)) else default
+
+
 def compute_feasibility_score(patent_count: int, catalog_overlap_ratio: float, news_sentiment: float) -> float:
     patent_score = 1.0 if patent_count > 0 else 0.0
     catalog_score = catalog_overlap_ratio
@@ -338,9 +346,26 @@ def compute_feasibility_score(patent_count: int, catalog_overlap_ratio: float, n
     return round(100*(patent_score + catalog_score + sentiment_score) / 3)
 
 def calculate_dvf_score(patents_summary: dict, news_summary: dict, reviews_social_summary: dict, catalog_summary: dict) -> dict:
-    desirability = 100*(reviews_social_summary.get("desirability"))
-    viability = (reviews_social_summary.get("desirability")/5) + 200*(reviews_social_summary.get("avg_social_sentiment")/5) + ((reviews_social_summary.get("avg_rating")-1)*50/5)
-    feasibility = compute_feasibility_score(patent_count=patents_summary.get('n_patents'), catalog_overlap_ratio=catalog_summary['catalog_overlap'], news_sentiment= news_summary['avg_sentiment'],)
+    desirability_score = safe_number(reviews_social_summary.get("desirability"))
+    avg_social_sentiment = safe_number(reviews_social_summary.get("avg_social_sentiment"))
+    avg_rating = safe_number_rating(reviews_social_summary.get("avg_rating"))
+    patent_count = safe_number(patents_summary.get("n_patents"))
+    catalog_overlap = safe_number(catalog_summary.get("catalog_overlap"))
+    news_sentiment = safe_number(news_summary.get("avg_sentiment"))
+
+    desirability = 100 * desirability_score
+
+    viability = (
+        (desirability_score / 5)
+        + 200 * (avg_social_sentiment / 5)
+        + ((avg_rating - 1) * 50 / 5)
+    )
+
+    feasibility = compute_feasibility_score(
+        patent_count=patent_count,
+        catalog_overlap_ratio=catalog_overlap,
+        news_sentiment=news_sentiment,
+    )
 
     def score_to_label(score):
         if score >= 70:

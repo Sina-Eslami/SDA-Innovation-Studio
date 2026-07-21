@@ -223,6 +223,9 @@ def rating_guage(rating):
     rating: float between 1 and 5
     """
 
+    if not isinstance(rating, (int, float)):
+        rating = 3
+
     rating = max(1, min(5, rating))
 
     radius = 100
@@ -701,7 +704,7 @@ def render_patents_globe(patents_df: pd.DataFrame):
         viability=round(dvf_score.get("viability_score"), 2), 
         feasibility=round(dvf_score.get("feasibility_score"), 2), 
         social_sentiment=round(reviews_social_summary.get("avg_social_sentiment"), 2), 
-        reviews_rating=round(reviews_social_summary.get("avg_rating"), 2),
+        reviews_rating=round(reviews_social_summary.get("avg_rating") if isinstance(reviews_social_summary.get("avg_rating"), (int, float)) else 3, 2),
         )
 
         score_summary(
