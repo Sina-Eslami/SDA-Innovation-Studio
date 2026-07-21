@@ -192,10 +192,19 @@ def extract_pain_points_and_desires(texts: list, top_n: int = 10) -> dict:
 
     noun_phrases = extract_noun_phrases(texts, top_n=top_n)
 
-    desirability_score = (
-        round(desire_volume / pain_volume, 3) if pain_volume > 0 else None
+    desire_count = sum(desire_phrase_counter.values())
+    pain_count = sum(pain_phrase_counter.values())
+    volume_component = desire_volume / max(pain_volume, 1)
+    count_component = desire_count / max(pain_count, 1)
+    frequency_component = min(desire_count, 10) / 10
+    desirability_score = round(
+        (
+            volume_component +
+            count_component +
+            frequency_component
+        ) / 3,
+        2,
     )
-
     return {
         "top_pain_signals": [p for p, _ in pain_phrase_counter.most_common(top_n)],
         "top_desire_signals": [p for p, _ in desire_phrase_counter.most_common(top_n)],
@@ -291,10 +300,7 @@ def summarize_reviews_social(reviews_df: pd.DataFrame, social_df: pd.DataFrame) 
 
     pain_desire = extract_pain_points_and_desires(combined_texts, top_n=10)
     result.update(pain_desire)
-    result["desirability"] = (
-    100 if pain_desire["pain_volume"] == 0
-    else 100*(pain_desire["desire_volume"] / (pain_desire["pain_volume"] + pain_desire["desire_volume"]))
-    )
+    result["desirability"] = pain_desire.get("desirability_score")
 
     return result
 
@@ -332,7 +338,7 @@ def compute_feasibility_score(patent_count: int, catalog_overlap_ratio: float, n
     return round(100*(patent_score + catalog_score + sentiment_score) / 3)
 
 def calculate_dvf_score(patents_summary: dict, news_summary: dict, reviews_social_summary: dict, catalog_summary: dict) -> dict:
-    desirability = reviews_social_summary.get("desirability")
+    desirability = 100*(reviews_social_summary.get("desirability"))
     viability = (reviews_social_summary.get("desirability")/5) + 200*(reviews_social_summary.get("avg_social_sentiment")/5) + ((reviews_social_summary.get("avg_rating")-1)*50/5)
     feasibility = compute_feasibility_score(patent_count=patents_summary.get('n_patents'), catalog_overlap_ratio=catalog_summary['catalog_overlap'], news_sentiment= news_summary['avg_sentiment'],)
 
